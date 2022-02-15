@@ -1,6 +1,6 @@
 ---
 title: "Activity 7"
-author: "Name"
+author: "Robert Bilyk"
 output: github_document
 ---
 
@@ -13,6 +13,9 @@ knitr::opts_chunk$set(error = TRUE)
 Load the entirety of the `{tidyverse}`.
 Be sure to avoid printing out any unnecessary information and give the code chunk a meaningful name.
 
+```{r}
+library(tidyverse)
+```
 
 
 In this activity we will explore joining information that is contained in multiple data files.
@@ -31,6 +34,11 @@ Read each of the three files using `here::here` in combination with the appropri
 Assign each file to a meaningful object name (e.g., `dennys`,`laquinta`, and `states`), be sure to avoid printing any unnecessary information.
 Give your code chunk a meaningful name.
 
+```{r, message=FALSE}
+dennys <- read_csv(here::here("data","dennys.csv"))
+laquinta <- read_csv(here::here("data","laquinta.csv"))
+states <- read_csv(here::here("data","states.csv"))
+```
 
 
 
@@ -58,31 +66,31 @@ str(states)
 
 | Variable    | Type | Brief description                 |
 |-------------|------|-----------------------------------|
-| `address`   |      | street address of dennys location |
-| `city`      |      | city of dennys location           |
-| `state`     |      | state of dennys location          |
-| `zip`       |      | zip code of dennys location       |
-| `longitude` |      | east-west position on Earth       |
-| `latitude`  |      | north-south position on Earth     |
+| `address`   |   chr   | street address of dennys location |
+| `city`      |    chr  | city of dennys location           |
+| `state`     |   chr   | state of dennys location          |
+| `zip`       |   chr   | zip code of dennys location       |
+| `longitude` |  num    | east-west position on Earth       |
+| `latitude`  |    num  | north-south position on Earth     |
 
 #### La Quinta's data
 
 | Variable    | Type | Brief description                   |
 |-------------|------|-------------------------------------|
-| `address`   |      | street address of laquinta location |
-| `city`      |      | city of laquinta location           |
-| `state`     |      | state of laquinta location          |
-| `zip`       |      | zip code of laquinta location       |
-| `longitude` |      | east-west position on Earth         |
-| `latitude`  |      | north-south position on Earth       |
+| `address`   |  chr    | street address of laquinta location |
+| `city`      |   chr   | city of laquinta location           |
+| `state`     |  chr    | state of laquinta location          |
+| `zip`       |   chr   | zip code of laquinta location       |
+| `longitude` |   num   | east-west position on Earth         |
+| `latitude`  |   num   | north-south position on Earth       |
 
 #### States data
 
 | Variable       | Type | Brief description             |
 |----------------|------|-------------------------------|
-| `name`         |      | state name                    |
-| `abbreviation` |      | state abbreviation            |
-| `area`         |      | area in thousand square miles |
+| `name`         |  chr    | state name                    |
+| `abbreviation` |   chr   | state abbreviation            |
+| `area`         |  num    | area in thousand square miles |
 
 ![](README-img/noun_pause.png) **Planned Pause Point**: If you have any questions, contact your instructor. Otherwise feel free to continue on.
 
@@ -95,14 +103,13 @@ Look at the websites that the data come from (linked above).
 Are there any La Quinta’s locations outside of the US?
 What about Denny’s?
 
-**Response**:
-
+There are no Dennys locations outside the US. There are quite a few La Quintas locations outside of the US.
 
 If we wanted to do this using the datasets, would we need to ?
 Don’t worry about implementing this yet, you only need to brainstorm some ideas.
 Include at least one idea as your answer, but you are welcome to write down a few options too.
 
-**Response**:
+Use the locations datasets and use the state category to see if it shows up in the states dataset to determine if that location is in the US.
 
 
 ### Preparing to Join
@@ -114,16 +121,23 @@ To do so, *filter* the Denny’s locations for observations where state is *not 
 Do not assign this to anything; we only want to see if we need to be aware of non-US cases.
 If there are any non-US locations, specify where these are.
 
+```{r}
+dennys %>%
+  filter(state != states$abbreviation) 
+```
 
 
 
-**Response**:
-
+There are no Dennys locations outside of the US.
 
 Now do this again, but using `anti_join`.
 To do so, take the Denny's locations and anti-join this with the states dataset.
 Remember to specify your `by` columns.
 
+```{r}
+dennys %>%
+  anti_join(states, by=c("state"="abbreviation"))
+```
 
 
 #### A Brief Aside
@@ -137,7 +151,8 @@ For example, your instructor could see if there are any Denny's in any the state
 dennys %>%
   mutate(bradford_lived = case_when(
     state %in% c("MI", "NC", "IL", "ME") ~ "Yes",
-    TRUE ~ "No"))
+    TRUE ~ "No")) 
+    
 ```
 
 `case_when` looks to see if any of the `dennys$state`s are in the vector of state abbreviations that I have lived (i.e., `c("MI", "NC", "IL", "ME")`).
@@ -165,6 +180,10 @@ dennys %>%
 
 Determine if La Quinta has any locations that are outside of the US.
 
+```{r}
+laquinta %>%
+  anti_join(states, by=c("state"="abbreviation"))
+```
 
 
 
@@ -174,6 +193,9 @@ For the rest of this activity, we will work with the data from the United States
 All Denny's locations in our file are in the US so we do not need to worry about updating this object, but you do need to do some work on the `laquinta` data.
 Create a new object called `laquinta_us` that only contains the locations inside the US.
 
+```{r}
+laquinta_us <- semi_join(laquinta, states, by=c("state"="abbreviation"))
+```
 
 
 ### Fewest locations
@@ -182,24 +204,33 @@ Let's test some of our data summary skills.
 
 Which US state(s) has/ve the fewest Denny's location?
 
+```{r}
+dennys %>%
+  group_by(state) %>%
+  summarise(total = length(state)) %>%
+  arrange(total)
+```
 
 
 
-**Response**:
-
+Delaware has the lowest number of locations
 
 Which US state(s) has/ve the fewest La Quinta locations?
 
+```{r}
+laquinta_us %>%
+  group_by(state) %>%
+  summarise(total = length(state)) %>%
+  arrange(total)
+```
 
 
 
-**Response**:
-
+Maine has the lowest number of laquinta locations
 
 Is this surprising to you? Why or why not?
 
-**Response**:
-
+None of these were too exciting. I expected smaller states without large tourist attractions to have few locations.
 
 ### Locations per thousand square miles
 
@@ -215,23 +246,37 @@ To do this, we will need to join each company's tibble with the information in t
   Therefore, we will need to specify that the `state` variable from the `dennys` tibble should be matched `by` the `abbreviation` variable from the `states` tibble.
 3. *Then*, calculate the number of Denny's locations *per* thousand square miles.
 
+```{r}
+dennys %>%
+  group_by(state) %>%
+  summarise(n = length(state)) %>%
+  inner_join(states, by = c("state"="abbreviation")) %>%
+  mutate(numsqm=(n/(area*1000))) %>%
+  arrange(desc(numsqm))
+```
 
 
 
 Which states have the most Denny's locations per thousand square miles?
 
-**Response**:
-
+DC has the largest number by far.
 
 #### La Quinta
 
 Similarly as we previously did for Denny's, calculate the number of La Quinta locations *per* thousand square miles.
 
+```{r}
+laquinta_us %>%
+  group_by(state) %>%
+  summarise(n = length(state)) %>%
+  inner_join(states, by = c("state"="abbreviation")) %>%
+  mutate(numsqm=(n/area)*1000) %>%
+  arrange(desc(numsqm))
+```
 
 
 
-**Response**:
-
+Rhode Island has the largest number per square miles
 
 
 <img src="README-img/noun_pause.png" alt="pause" width = "20"/> <b>Planned Pause Point</b>: If you feel that you have a good understanding of these commands, feel free to start working on your project. The remainder of this activity will deal with creating map data visualizations.
@@ -245,13 +290,12 @@ Both of these tibbles have the same columns in the same order (i.e., `address`, 
 Why would it not be wise to use a mutating join (e.g., `inner_join`, `left/right_join`, `full_join`) for these data?
 That is, both of the datasets have the same variable names, would it not make sense to join them at the same address?
 
-**Response**:
-
+It would be more helpful to keep both sets somewhat seperate toherwise it would be hard to differentiate which is which.
 
 If we were able to use a mutating join, what would this output would look like?
 Why would this not be helpful?
 
-**Response**:
+They would all be mixed together
 
 
 You were already shown these top-notch animations from [Garrick Aden-Blue](https://www.garrickadenbuie.com/project/tidyexplain/).
@@ -270,16 +314,22 @@ pre_join_laquinta_us <- laquinta_us %>%
 Now, stack these two `pre_join_*` tibbles on top of each other.
 After you have verified the stacking worked, assign the resulting object to `dennys_laquinta`.
 
+```{r}
+dennys_laquinta <- bind_rows(pre_join_dennys,pre_join_laquinta_us)
+```
 
 
 
 We can plot the locations of the two establishments using a scatter plot and color the points by the establishment type.
 Note that longitude should be plotted on the *x*-axis and latitude on the *y*-axis.
 
+```{r}
+dennys_laquinta %>%
+  ggplot(aes(x=longitude, y=latitude, color=establishment)) +
+  geom_jitter()
+```
 
 
-
-**Response**:
 
 
 ### More with visualizing
@@ -301,6 +351,12 @@ Filter the data for observations in Michigan only, and create a plot.
 Try adjusting the transparency of the points by setting the `alpha` level (so that it is easier to see the over-plotted ones).
 Visually, does Mitch Hedberg’s joke appear to hold in Michigan?
 
+```{r}
+dennys_laquinta %>%
+  filter(state=="MI") %>%
+  ggplot(aes(x=longitude, y=latitude, color=establishment)) +
+  geom_jitter()
+```
 
 
 
@@ -313,6 +369,12 @@ Now filter the data for observations in Texas only.
 Create the plot, with an appropriate `alpha` level.
 Visually, does Mitch Hedberg’s joke appear to hold here?
 
+```{r}
+dennys_laquinta %>%
+  filter(state=="TX") %>%
+  ggplot(aes(x=longitude, y=latitude, color=establishment)) +
+  geom_jitter()
+```
 
 
 
